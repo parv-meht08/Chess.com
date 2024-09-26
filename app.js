@@ -4,6 +4,7 @@ const http = require("http");
 const { Chess } = require("chess.js");
 const path = require("path");
 const { title } = require("process");
+const { error } = require("console");
 
 const app = express();
 
@@ -34,7 +35,7 @@ io.on("connection", function (uniquesocket) {
     uniquesocket.emit("spectatorRole");
   }
 
-  socket.on("disconnect", function () {
+  uniquesocket.on("disconnect", function () {
     console.log("Disconnected");
     if (uniquesocket.id === players.white) {
       delete players.white;
@@ -51,7 +52,21 @@ io.on("connection", function (uniquesocket) {
       if (chess.turn() === "b" && uniquesocket.id === players.black) {
         return;
       }
-    } catch (error) {}
+
+      const result = chess.move(move);
+      if(result){
+        currentPlayer = chess.turn();
+        io.emit("move", move);
+        io.emit("boardState", chess.fen())
+      }
+      else{
+        console.log("Invalid move: ", move);
+        uniquesocket.emit("Invalid move: ", move);
+      }
+    } catch (error) {
+      console.log(error);
+      uniquesocket.emit("Invalid move: ", move);
+    }
   });
 });
 
